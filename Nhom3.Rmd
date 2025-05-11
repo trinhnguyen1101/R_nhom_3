@@ -1,0 +1,372 @@
+---
+title: "ĐỒ ÁN CUỐI KỲ"
+output: html_document
+date: "2025-05-09"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(broom)
+```
+
+```{r}
+## Đọc dữ liệu từ file CSV
+all <- read.csv(file.choose())
+```
+
+```{r}
+## Làm sạch dữ liệu
+# Xóa cột 'page'
+all$page <- NULL
+# Loại bỏ các dòng trống
+#all$money <- gsub("[^0-9.-]", "", all$money) # Xóa ký tự không phải số
+all$money <- as.numeric(all$money)
+all <- subset(all, !is.na(desc) & desc != "" & !is.na(money) & money > 0)
+print(all)
+
+## Thống Kê Mô Tả
+id_summary <- length(unique(all$id))
+cat("Số lượng ID duy nhất:", id_summary, "\n")
+
+# Thống kê cho cột money với số nguyên
+money_summary <- c(
+  Min = format(min(all$money, na.rm = TRUE), scientific = FALSE, trim = TRUE),
+  Q1 = format(quantile(all$money, 0.25, na.rm = TRUE), scientific = FALSE, trim = TRUE),
+  Median = format(median(all$money, na.rm = TRUE), scientific = FALSE, trim = TRUE),
+  Mean = format(round(mean(all$money, na.rm = TRUE)), scientific = FALSE, trim = TRUE),
+  Q3 = format(quantile(all$money, 0.75, na.rm = TRUE), scientific = FALSE, trim = TRUE),
+  Max = format(max(all$money, na.rm = TRUE), scientific = FALSE, trim = TRUE)
+)
+print("Thống kê cột money:")
+print(money_summary)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+# Thống kê mô tả cho các cột còn lại (date, bank, id, desc)
+all$id <- as.character(all$id)  # Chuyển id thành character để định dạng giống date, bank, desc
+stat_desc <- summary(all[, c("date", "bank", "id", "desc")])
+print(stat_desc)
+```
+
+```{r}
+## Thống Kê Suy Diễn
+# 1. Khoảng tin cậy 95% cho trung bình money
+n <- length(all$money)
+mean_money <- mean(all$money, na.rm = TRUE)
+sd_money <- sd(all$money, na.rm = TRUE)
+se_money <- sd_money / sqrt(n)  # Sai số chuẩn
+ci_95 <- c(
+  Lower = mean_money - qnorm(0.975) * se_money,
+  Upper = mean_money + qnorm(0.975) * se_money
+)
+cat("Khoảng tin cậy 95% cho trung bình money:\n")
+cat("Lower:", round(ci_95["Lower"]), "Upper:", round(ci_95["Upper"]), "\n\n")
+```
+
+```{r}
+# 2. Kiểm định t một mẫu: Trung bình money có bằng 500,000 không?
+t_test <- t.test(all$money, mu = 500000, conf.level = 0.95)
+cat("Kiểm định t một mẫu (H0: mean = 500000):\n")
+cat("t-value:", round(t_test$statistic, 2), "\n")
+cat("p-value:", format(t_test$p.value, scientific = FALSE), "\n")
+cat("Kết luận: ", ifelse(t_test$p.value < 0.05, "Bác bỏ H0 (trung bình khác 500000)", "Không bác bỏ H0 (trung bình không khác 500000)"), "\n")
+
+```
+
+
+
+```{r}
+# Chuẩn bị dữ liệu (liên quan đến cả z-score và hồi quy tuyến tính)
+# - date_clean và days_since_start dùng cho hồi quy
+# - bank dùng cho hồi quy
+all$date_clean <- as.Date(all$date, format = "%d/%m", errors = "coerce")
+all$days_since_start <- as.numeric(all$date_clean - min(all$date_clean, na.rm = TRUE))
+all$bank <- as.factor(all$bank)
+```
+
+```{r}
+# PHẦN Z-SCORE: Tính z-score và loại bỏ ngoại lệ
+# Tính z-score cho cột money
+all$z_score <- (all$money - mean(all$money, na.rm = TRUE)) / sd(all$money, na.rm = TRUE)
+# Xác định ngoại lệ (|z-score| > 3)
+all$is_outlier <- abs(all$z_score) > 3
+
+# In số lượng ngoại lệ
+cat("Số lượng giao dịch ngoại lệ (Z-score):", sum(all$is_outlier, na.rm = TRUE), "\n")
+
+```
+
+```{r}
+# Lọc các giao dịch ngoại lệ để kiểm tra
+outliers <- all[all$is_outlier, c("date", "bank", "id", "money", "desc", "z_score")]
+print(outliers)
+
+# Loại bỏ các giao dịch ngoại lệ
+all_clean <- all[!all$is_outlier, ]
+```
+
+```{r}
+# Kiểm tra kích thước dữ liệu
+cat("Kích thước dữ liệu gốc (Z-score):", nrow(all), "\n")
+cat("Kích thước dữ liệu sau khi loại bỏ ngoại lệ (Z-score):", nrow(all_clean), "\n")
+
+```
+
+```{r}
+# Thống kê cho cột money của dữ liệu mới (tương tự như dữ liệu gốc)
+money_summary_clean <- c(
+  Min = format(min(all_clean$money, na.rm = TRUE), scientific = FALSE, trim = TRUE),
+  Q1 = format(quantile(all_clean$money, 0.25, na.rm = TRUE), scientific = FALSE, trim = TRUE),
+  Median = format(median(all_clean$money, na.rm = TRUE), scientific = FALSE, trim = TRUE),
+  Mean = format(round(mean(all_clean$money, na.rm = TRUE)), scientific = FALSE, trim = TRUE),
+  Q3 = format(quantile(all_clean$money, 0.75, na.rm = TRUE), scientific = FALSE, trim = TRUE),
+  Max = format(max(all_clean$money, na.rm = TRUE), scientific = FALSE, trim = TRUE)
+)
+print("Thống kê cột money (dữ liệu đã làm sạch):")
+print(money_summary_clean)
+
+```
+
+```{r}
+# Thống kê mô tả cho các cột còn lại (date, bank, id, desc) của dữ liệu mới
+all_clean$id <- as.character(all_clean$id)  # Chuyển id thành character để đồng bộ định dạng
+stat_desc_clean <- summary(all_clean[, c("date", "bank", "id", "desc")])
+print(stat_desc_clean)
+
+```
+
+```{r}
+# PHẦN HỒI QUY TUYẾN TÍNH: Chạy mô hình hồi quy
+# Hồi quy trên dữ liệu gốc
+model_original <- lm(money ~ bank + days_since_start, data = all)
+cat("Kết quả hồi quy trên dữ liệu gốc (Hồi quy tuyến tính):\n")
+summary(model_original)
+
+```
+
+```{r}
+# Hồi quy trên dữ liệu đã làm sạch (sau khi loại bỏ ngoại lệ bằng z-score)
+model_clean <- lm(money ~ bank + days_since_start, data = all_clean)
+cat("Kết quả hồi quy trên dữ liệu đã làm sạch (Hồi quy tuyến tính):\n")
+summary(model_clean)
+
+```
+
+```{r}
+# 1. Histogram của money
+ggplot() +
+  geom_histogram(aes(x = all$money, fill = "Dữ liệu gốc"), alpha = 0.4, bins = 50) +
+  geom_histogram(aes(x = all_clean$money, fill = "Dữ liệu đã làm sạch"), alpha = 1, bins = 50) +
+  scale_x_log10(labels = scales::comma) +
+  labs(title = "Phân phối của Money trước và sau khi loại bỏ ngoại lệ (Z-score)",
+       x = "Money (VND, log scale)", y = "Số lượng giao dịch",
+       fill = "Loại dữ liệu") +
+  theme_minimal()
+
+```
+
+```{r}
+# 2. Boxplot của money theo ngân hàng
+ggplot() +
+  geom_boxplot(data = all, aes(x = bank, y = money, fill = "Dữ liệu gốc"), alpha = 1) +
+  geom_boxplot(data = all_clean, aes(x = bank, y = money, fill = "Dữ liệu đã làm sạch"), alpha = 1) +
+  scale_y_log10(labels = scales::comma) +
+  labs(title = "Boxplot của Money theo Ngân hàng trước và sau khi loại bỏ ngoại lệ (Z-score)",
+       x = "Ngân hàng", y = "Money (VND, log scale)",
+       fill = "Loại dữ liệu") +
+  theme_minimal()
+
+```
+
+```{r}
+# 3. Biểu đồ phân tán của money theo days_since_start
+ggplot() +
+  geom_point(data = all, aes(x = days_since_start, y = money, color = "Dữ liệu gốc"), alpha = 0.3) +
+  geom_point(data = all_clean, aes(x = days_since_start, y = money, color = "Dữ liệu đã làm sạch"), alpha = 0.3) +
+  scale_y_log10(labels = scales::comma) +
+  labs(title = "Money theo Days Since Start trước và sau khi loại bỏ ngoại lệ (Z-score & Hồi quy)",
+       x = "Số ngày kể từ ngày đầu tiên", y = "Money (VND, log scale)",
+       color = "Loại dữ liệu") +
+  theme_minimal()
+
+```
+
+```{r}
+# Trích xuất hệ số và khoảng tin cậy từ model_original và model_clean
+# Sử dụng tidy() để lấy hệ số, sai số chuẩn, và tính khoảng tin cậy 95%
+coef_original <- tidy(model_original, conf.int = TRUE, conf.level = 0.95)
+coef_clean <- tidy(model_clean, conf.int = TRUE, conf.level = 0.95)
+
+# Thêm cột để phân biệt giữa hai mô hình
+coef_original$model <- "Dữ liệu gốc"
+coef_clean$model <- "Dữ liệu đã làm sạch"
+
+# Kết hợp dữ liệu từ hai mô hình
+coef_data <- rbind(coef_original, coef_clean)
+
+# Loại bỏ hệ số chặn (Intercept) để tập trung vào các biến độc lập
+coef_data <- coef_data[coef_data$term != "(Intercept)", ]
+
+coef_data$term <- factor(coef_data$term, levels = c("bankBIDV", "bankVCB", "bankVietin", "days_since_start"),
+                         labels = c("Ngân hàng BIDV", "Ngân hàng VCB", "Ngân hàng Vietin", "Số ngày từ ngày đầu"))
+
+# Vẽ Coefficient Plot
+ggplot(coef_data, aes(x = estimate, y = term, color = model)) +
+  geom_point(position = position_dodge(width = 0.5), size = 3) +
+  geom_errorbarh(aes(xmin = conf.low, xmax = conf.high), 
+                 position = position_dodge(width = 0.5), height = 0.2) +  
+  geom_vline(xintercept = 0, linetype = "dashed", color = "black") +  
+  labs(title = "Biểu đồ Hệ số Hồi quy: Dữ liệu Gốc vs Dữ liệu Làm sạch",
+       x = "Hệ số (VND)",
+       y = "Biến độc lập",
+       color = "Loại dữ liệu") +
+  scale_color_manual(values = c("Dữ liệu gốc" = "lightblue", "Dữ liệu đã làm sạch" = "pink")) +
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+```
+
+```{r}
+
+
+```
+
+```{r}
+# CHUẨN BỊ DỮ LIỆU CHO PHÂN CỤM KMEANS
+# Ta chỉ dùng cột 'money' cho đơn giản (có thể thêm days_since_start nếu muốn)
+money_scaled <- scale(all_clean$money)
+
+# Xác định số cụm bằng Elbow method
+wss <- sapply(1:10, function(k){
+  kmeans(money_scaled, centers = k, nstart = 10)$tot.withinss
+})
+plot(1:10, wss, type = "b", pch = 19, frame = FALSE,
+     xlab = "Số cụm K", ylab = "Tổng bình phương khoảng cách (WSS)",
+     main = "Elbow Method để chọn số cụm")
+
+# Giả sử bạn chọn K = 3 (sau khi nhìn elbow)
+set.seed(123)
+km_result <- kmeans(money_scaled, centers = 4, nstart = 10)
+
+# Gắn nhãn cụm vào data
+all_clean$cluster <- factor(km_result$cluster)
+
+ggplot(all_clean, aes(x = 1:nrow(all_clean), y = money, color = cluster)) +
+  geom_point() +
+  labs(title = "Phân bố tiền theo cụm KMeans", x = "Giao dịch", y = "Số tiền")
+
+library(dplyr)
+
+cluster_summary <- all_clean %>%
+  group_by(cluster) %>%
+  summarise(
+    SoLuong = n(),
+    Min_money = min(money, na.rm = TRUE),
+    Max_money = max(money, na.rm = TRUE),
+    Mean_money = round(mean(money, na.rm = TRUE)),
+    Median_money = median(money, na.rm = TRUE),
+    Total_money = sum(money, na.rm = TRUE)
+  )
+
+print(cluster_summary)
+
+```
+
+## Phân tích Random Forest
+
+```{r}
+library(randomForest)
+library(caret)
+library(ggplot2)
+library(dplyr)
+
+# Chuẩn bị dữ liệu
+data_rf <- all_clean[, c("money", "bank", "days_since_start")]
+set.seed(123)
+trainIndex <- createDataPartition(data_rf$money, p = 0.7, list = FALSE)
+train_data <- data_rf[trainIndex, ]
+test_data <- data_rf[-trainIndex, ]
+
+# Kiểm tra dữ liệu
+cat("Kích thước tập huấn luyện:", dim(train_data), "\n")
+cat("Kích thước tập kiểm tra:", dim(test_data), "\n")
+
+```
+
+Xây dựng mô hình Random Forest
+Hồi quy Random Forest (rf_tuned)
+Dự đoán money với mtry tối ưu hóa qua kiểm định chéo 5-fold.
+
+
+```{r}
+# Cấu hình và huấn luyện
+control <- trainControl(method = "cv", number = 5, search = "grid")
+tune_grid <- expand.grid(.mtry = seq(1, ncol(train_data)-1, by = 1))
+set.seed(123)
+rf_tuned <- train(money ~ ., data = train_data, method = "rf", trControl = control, 
+                  tuneGrid = tune_grid, ntree = 100)
+
+# Hiệu suất
+predictions_tuned <- predict(rf_tuned, test_data)
+mse_tuned <- mean((test_data$money - predictions_tuned)^2)
+rmse_tuned <- sqrt(mse_tuned)
+r_squared_tuned <- cor(test_data$money, predictions_tuned)^2
+cat("Hồi quy RF - RMSE:", round(rmse_tuned, 2), "\n")
+cat("Hồi quy RF - R²:", round(r_squared_tuned, 3), "\n")
+cat("mtry tối ưu:", rf_tuned$bestTune$mtry, "\n")
+```
+## Biểu đồ trực quan hóa
+1. Biểu đồ hộp: Phân phối số tiền thực tế
+```{r}
+ggplot(all_clean, aes(x = bank, y = money, fill = bank)) +
+  geom_boxplot() +
+  theme_minimal() +
+  labs(title = "Phân phối số tiền thực tế theo ngân hàng", x = "Ngân hàng", y = "Số tiền (VND)") +
+  theme(legend.position = "none", axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_y_continuous(labels = scales::comma)
+```
+
+2. Biểu đồ phân tán: Thực tế vs dự đoán
+```{r}
+pred_actual_tuned <- data.frame(Actual = test_data$money, Predicted = predictions_tuned)
+ggplot(pred_actual_tuned, aes(x = Actual, y = Predicted)) +
+  geom_point(alpha = 0.5, color = "blue") +
+  geom_abline(slope = 1, intercept = 0, color = "red") +
+  theme_minimal() +
+  labs(title = "Giá trị thực tế so với dự đoán", x = "Thực tế (VND)", y = "Dự đoán (VND)") +
+  scale_x_continuous(labels = scales::comma) +
+  scale_y_continuous(labels = scales::comma)
+```
+
+
+3. Biểu đồ đường: Xu hướng số tiền dự đoán
+```{r}
+new_data_banks$bank <- factor(new_data_banks$bank, levels = c("Vietcombank", "BIDV", "Techcombank"))
+new_data_banks$predicted_money <- round(new_predictions_banks, 2)
+ggplot(new_data_banks, aes(x = days_since_start, y = predicted_money, color = bank)) +
+  geom_line() +
+  geom_point(size = 2) +
+  theme_minimal() +
+  labs(title = "Xu hướng số tiền dự đoán", x = "Ngày kể từ bắt đầu", y = "Số tiền dự đoán (VND)", color = "Ngân hàng") +
+  facet_wrap(~bank, ncol = 1) +
+  scale_y_continuous(labels = scales::comma)
+```
+
+4. Biểu đồ tầm quan trọng biến
+```{r}
+rf_model_tuned <- randomForest(money ~ ., data = train_data, ntree = 100, mtry = rf_tuned$bestTune$mtry, importance = TRUE)
+importance_df <- as.data.frame(importance(rf_model_tuned))
+importance_df$Variable <- rownames(importance_df)
+ggplot(importance_df, aes(x = reorder(Variable, `%IncMSE`), y = `%IncMSE`)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  coord_flip() +
+  theme_minimal() +
+  labs(title = "Tầm quan trọng của biến (Hồi quy RF)", x = "Biến", y = "% Tăng MSE")
+```
