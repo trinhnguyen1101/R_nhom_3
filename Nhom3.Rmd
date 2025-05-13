@@ -102,7 +102,7 @@ all$is_outlier <- abs(all$z_score) > 3
 cat("Số lượng giao dịch ngoại lệ (Z-score):", sum(all$is_outlier, na.rm = TRUE), "\n")
 
 ```
-
+Lọc ra được 1000 ngoại lệ
 ```{r}
 # Lọc các giao dịch ngoại lệ để kiểm tra
 outliers <- all[all$is_outlier, c("date", "bank", "id", "money", "desc", "z_score")]
@@ -118,6 +118,7 @@ cat("Kích thước dữ liệu gốc (Z-score):", nrow(all), "\n")
 cat("Kích thước dữ liệu sau khi loại bỏ ngoại lệ (Z-score):", nrow(all_clean), "\n")
 
 ```
+Kích thước trước và sau khi bỏ ngoại lệ đã giảm, tuy không nhiều nhưng những ngoại lệ này ảnh hướng rất lớn tới bộ dữ liệu về sau
 
 ```{r}
 # Thống kê cho cột money của dữ liệu mới (tương tự như dữ liệu gốc)
@@ -133,7 +134,7 @@ print("Thống kê cột money (dữ liệu đã làm sạch):")
 print(money_summary_clean)
 
 ```
-
+Sau khi bỏ ngoại lệ, Mean đã giảm chỉ còn 536914, còn Max thì từ 10 tỷ giảm xuống chỉ còn khoảng 42 triệu.
 ```{r}
 # Thống kê mô tả cho các cột còn lại (date, bank, id, desc) của dữ liệu mới
 all_clean$id <- as.character(all_clean$id)  # Chuyển id thành character để đồng bộ định dạng
