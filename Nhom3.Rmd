@@ -82,6 +82,8 @@ print(keyword_freq)
 all$desc_clean <- NULL
 ```
 
+Cung cấp thông tin cơ bản về quy mô dữ liệu: số giao dịch lớn (860,847) và tổng tiền ủng hộ: 590,533,771,556 VND
+
 Thống kê 6 giá trị mô tả trung tâm và phân bố của biến money:
 
   Min: Giá trị nhỏ nhất
@@ -95,6 +97,14 @@ Thống kê 6 giá trị mô tả trung tâm và phân bố của biến money:
   Q3: Phân vị thứ 75
 
   Max: Giá trị lớn nhất
+
+Ngân hàng: Cho biết ngân hàng nào được sử dụng nhiều nhất (như Vietcombank), phản ánh thói quen giao dịch.
+
+Ngày: Xác định thời điểm ủng hộ cao điểm (ví dụ: ngay sau bão Yagi), giúp phân tích xu hướng thời gian.
+
+ID: Số ID lớn (~860,847) cho thấy nhiều người tham gia, ít giao dịch lặp lại từ cùng một người.
+
+Phân tích nội dung desc xác định các từ khóa phổ biến, phản ánh ý định ủng hộ (“ủng hộ”, “yagi”, “bão”). Việc này giúp xác định động cơ ủng hộ của mọi người như: hỗ trợ đồng bào gặp nạn. Hỗ trợ phân tích cảm xúc hoặc mục đích giao dịch, có thể dùng để cải thiện thông điệp gây quỹ.
 
 ```{r}
 ## Thống Kê Suy Diễn
