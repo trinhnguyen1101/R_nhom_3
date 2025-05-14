@@ -23,17 +23,19 @@ all <- read.csv(file.choose())
 ## Làm sạch dữ liệu
 # Xóa cột 'page'
 all$page <- NULL
+# Dữ liệu có thể chứa cột page không cần thiết cho việc phân tích, nên ta loại bỏ nó để gọn gàng hơn.
 # Loại bỏ các dòng trống
 #all$money <- gsub("[^0-9.-]", "", all$money) # Xóa ký tự không phải số
-all$money <- as.numeric(all$money)
+all$money <- as.numeric(all$money) # Chuyển đổi giá trị money thành dạng số thực
 all <- subset(all, !is.na(desc) & desc != "" & !is.na(money) & money > 0)
 print(all)
+```
 
-## Thống Kê Mô Tả
-id_summary <- length(unique(all$id))
-cat("Số lượng ID duy nhất:", id_summary, "\n")
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
 
-# Thống kê cho cột money với số nguyên
+```{r}
+## Thống kê mô tả
+# Thống kê cho cột money 
 money_summary <- c(
   Min = format(min(all$money, na.rm = TRUE), scientific = FALSE, trim = TRUE),
   Q1 = format(quantile(all$money, 0.25, na.rm = TRUE), scientific = FALSE, trim = TRUE),
@@ -44,17 +46,25 @@ money_summary <- c(
 )
 print("Thống kê cột money:")
 print(money_summary)
-```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
-
-```{r}
 # Thống kê mô tả cho các cột còn lại (date, bank, id, desc)
 all$id <- as.character(all$id)  # Chuyển id thành character để định dạng giống date, bank, desc
 stat_desc <- summary(all[, c("date", "bank", "id", "desc")])
 print(stat_desc)
 ```
+Thống kê 6 giá trị mô tả trung tâm và phân bố của biến money:
 
+  Min: Giá trị nhỏ nhất
+
+  Q1: Phân vị thứ 25
+
+  Median: Trung vị 
+
+  Mean: Trung bình
+
+  Q3: Phân vị thứ 75
+
+  Max: Giá trị lớn nhất
 ```{r}
 ## Thống Kê Suy Diễn
 # 1. Khoảng tin cậy 95% cho trung bình money
@@ -69,7 +79,11 @@ ci_95 <- c(
 cat("Khoảng tin cậy 95% cho trung bình money:\n")
 cat("Lower:", round(ci_95["Lower"]), "Upper:", round(ci_95["Upper"]), "\n\n")
 ```
+Mục đích: Ước lượng phạm vi mà trung bình số tiền ủng hộ của tổng thể (tất cả giao dịch ủng hộ bão Yagi) với độ tin cậy 95%.
 
+Kết quả: Khoảng tin cậy 95% cho trung bình money: Lower: 681765 Upper: 690217
+
+Điều này cho thấy ràng quy mô ủng hộ bão Yagi dao động quanh 681,765 - 690,217 (VNĐ) với độ tin cậy cao.
 ```{r}
 # 2. Kiểm định t một mẫu: Trung bình money có bằng 500,000 không?
 t_test <- t.test(all$money, mu = 500000, conf.level = 0.95)
@@ -79,8 +93,13 @@ cat("p-value:", format(t_test$p.value, scientific = FALSE), "\n")
 cat("Kết luận: ", ifelse(t_test$p.value < 0.05, "Bác bỏ H0 (trung bình khác 500000)", "Không bác bỏ H0 (trung bình không khác 500000)"), "\n")
 
 ```
+Trong phân tích dữ liệu ủng hộ bão Yagi, kiểm định t giúp trả lời câu hỏi: “Liệu trung bình ủng hộ có đạt hoặc vượt mức kỳ vọng (500,000) không?” Kết quả (trung bình khác 500,000) cho thấy chiến dịch gây quỹ hiệu quả hơn dự kiến.
 
+Giả thuyết:
+  H₀: Trung bình tổng thể = 500,000.
+  H₁: Trung bình tổng thể ≠ 500,000.
 
+Có thể thấy: Kiểm định t một mẫu giúp xác nhận trung bình ủng hộ (~685,991) cao hơn mục tiêu 500,000, cho thấy chiến dịch gây quỹ thành công về tổng thể.
 
 ```{r}
 # Chuẩn bị dữ liệu (liên quan đến cả z-score và hồi quy tuyến tính)
