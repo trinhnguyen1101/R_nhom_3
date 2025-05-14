@@ -329,11 +329,18 @@ Tổng thể, làm sạch dữ liệu giúp giảm biên độ hệ số, làm k
 
 ```
 
-```{r}
-# CHUẨN BỊ DỮ LIỆU CHO PHÂN CỤM KMEANS
-# Ta chỉ dùng cột 'money' cho đơn giản (có thể thêm days_since_start nếu muốn)
-money_scaled <- scale(all_clean$money)
+## Kmeans để phân loại giao dịch dựa "money"
 
+
+Để đảm bảo phân cụm hiệu quả, dữ liệu đã được loại bỏ các ngoại lệ bằng phương pháp z-score trước đó. Chúng tôi chỉ sử dụng cột money từ dữ liệu đã làm sạch (all_clean) để phân cụm. 
+
+```{r}
+money_scaled <- scale(all_clean$money)
+```
+
+Để xác định số lượng cụm phù hợp, nhóm đã áp dụng phương pháp Elbow – phương pháp này dựa trên việc tính toán tổng bình phương khoảng cách trong cụm (WSS - Within Sum of Squares) đối với các giá trị K khác nhau. 
+
+```{r}
 # Xác định số cụm bằng Elbow method
 wss <- sapply(1:10, function(k){
   kmeans(money_scaled, centers = k, nstart = 10)$tot.withinss
@@ -341,18 +348,32 @@ wss <- sapply(1:10, function(k){
 plot(1:10, wss, type = "b", pch = 19, frame = FALSE,
      xlab = "Số cụm K", ylab = "Tổng bình phương khoảng cách (WSS)",
      main = "Elbow Method để chọn số cụm")
+```
+Biểu đồ Elbow cho thấy tổng bình phương sai số trong cụm (WSS) giảm mạnh khi tăng số cụm từ 1 đến 4. Sau mốc này, độ giảm của WSS trở nên không đáng kể, cho thấy việc tăng thêm số cụm không mang lại nhiều cải thiện về chất lượng phân cụm.
 
-# Giả sử bạn chọn K = 3 (sau khi nhìn elbow)
+Mặc dù tại K=9 biểu đồ cho thấy WSS tiếp tục giảm và có thể là một lựa chọn tốt về mặt toán học, nhưng trong thực tế, việc phân loại các giao dịch theo giá trị tiền thành quá nhiều nhóm có thể dẫn đến việc phân cấp quá chi tiết, gây khó khăn trong việc phân tích và đưa ra quyết định.
+
+Do đó, việc chọn K=4 được xem là điểm cân bằng hợp lý giữa độ chính xác trong phân cụm và tính thực tiễn trong phân tích dữ liệu giao dịch.
+
+```{r}
+# Thực hiện phân cụm bằng Kmeans
 set.seed(123)
 km_result <- kmeans(money_scaled, centers = 4, nstart = 10)
 
 # Gắn nhãn cụm vào data
 all_clean$cluster <- factor(km_result$cluster)
+```
 
+Sau đó, biểu đồ phân bố số tiền theo từng cụm được vẽ nhằm quan sát sự khác biệt giữa các nhóm:
+
+```{r}
 ggplot(all_clean, aes(x = 1:nrow(all_clean), y = money, color = cluster)) +
   geom_point() +
   labs(title = "Phân bố tiền theo cụm KMeans", x = "Giao dịch", y = "Số tiền")
+```
+Biểu đồ cho thấy dữ liệu được chia thành 4 cụm rõ rệt, với cụm số 2 (màu xanh lá) đại diện cho các giao dịch có giá trị cao nhất, trong khi cụm số 1 và 4 chứa phần lớn các giao dịch nhỏ.
 
+```{r}
 library(dplyr)
 
 cluster_summary <- all_clean %>%
@@ -364,11 +385,26 @@ cluster_summary <- all_clean %>%
     Mean_money = round(mean(money, na.rm = TRUE)),
     Median_money = median(money, na.rm = TRUE),
     Total_money = sum(money, na.rm = TRUE)
+  ) %>%
+  mutate(
+    Percent_transactions = round(SoLuong / nrow(all),4),
+    Percent_money = round(Total_money / sum(all$money),4)
   )
 
 print(cluster_summary)
 
 ```
+Nhận xét
+  Cụm 1 và 4 chiếm phần lớn giao dịch lần lượt là 67,57% và 26,96% nhưng với giá trị nhỏ và trung bình (dưới 2 triệu đồng).
+  
+  Cụm 2 tuy có số lượng rất nhỏ 0.82%, nhưng chiếm phần lớn giá trị 16,34% tổng tiền nhờ các giao dịch lớn (từ 8 triệu đến 42 triệu).
+  
+  Cụm 3 nằm giữa cụm 2 và 4, đại diện cho các giao dịch khá.
+  
+  Ngoài 4 cụm trên thì các cụm ngoại lệ được bỏ ra từ Z-score được xếp vào nhóm giao dịch rất lớn, với tỉ lệ tổng số giao dịch và tỉ lệ tổng tiền giao dịch lần lượt 0.12% và 21.81%.
+
+Việc phân cụm này hỗ trợ việc phân tích hành vi ủng hộ, giúp dễ dàng nhận diện nhóm nhà hảo tâm có đóng góp lớn để có thể tri ân. Đồng thời, nó cũng giúp phân loại dữ liệu cho các mô hình dự đoán hoặc phân tích nâng cao về sau.
+
 
 ## Phân tích Random Forest
 
