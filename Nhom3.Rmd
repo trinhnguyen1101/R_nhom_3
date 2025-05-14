@@ -105,6 +105,9 @@ Giả thuyết:
   H₀: Trung bình tổng thể = 500,000.
   H₁: Trung bình tổng thể ≠ 500,000.
 
+Kết quả: t-value: 2.45 p-value: 0.016 
+Vì p-value < 0.05 ==> Kết luận: Bác bỏ H0
+
 Có thể thấy: Kiểm định t một mẫu giúp xác nhận trung bình ủng hộ (~685,991) cao hơn mục tiêu 500,000, cho thấy chiến dịch gây quỹ thành công về tổng thể.
 
 ```{r}
