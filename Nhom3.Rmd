@@ -357,6 +357,8 @@ ggplot(all_clean, aes(x = bank, y = money, fill = bank)) +
   theme(legend.position = "none", axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_y_continuous(labels = scales::comma)
 ```
+Hiển thị phân phối money theo bank trong all_clean.
+Vai trò: Cung cấp ngữ cảnh về dữ liệu thực tế, giúp so sánh với dự đoán (Hình 2, 3).
 
 2. Biểu đồ phân tán: Thực tế vs dự đoán
 ```{r}
@@ -369,6 +371,8 @@ ggplot(pred_actual_tuned, aes(x = Actual, y = Predicted)) +
   scale_x_continuous(labels = scales::comma) +
   scale_y_continuous(labels = scales::comma)
 ```
+So sánh money (thực tế) và predicted_money (dự đoán từ rf_tuned) trên tập kiểm tra.
+Vai trò: Đánh giá hiệu suất dự đoán của Random Forest, thể hiện RMSE = 1,482,475 (sai số lớn) và R² = 0.001 (mô hình không giải thích tốt).
 
 
 3. Biểu đồ đường: Xu hướng số tiền dự đoán
@@ -383,6 +387,9 @@ ggplot(new_data_banks, aes(x = days_since_start, y = predicted_money, color = ba
   facet_wrap(~bank, ncol = 1) +
   scale_y_continuous(labels = scales::comma)
 ```
+Hiển thị xu hướng predicted_money theo days_since_start cho mỗi ngân hàng trong new_data_banks.
+Vai trò: Phân tích xu hướng dự đoán theo thời gian, hỗ trợ chiến lược kêu gọi ủng hộ.
+
 
 4. Biểu đồ tầm quan trọng biến
 ```{r}
@@ -395,3 +402,6 @@ ggplot(importance_df, aes(x = reorder(Variable, `%IncMSE`), y = `%IncMSE`)) +
   theme_minimal() +
   labs(title = "Tầm quan trọng của biến (Hồi quy RF)", x = "Biến", y = "% Tăng MSE")
 ```
+Hiển thị tầm quan trọng của bank và days_since_start dựa trên %IncMSE.
+Vai trò: Phản ánh cơ chế Random Forest, giải thích mtry = 2 và R² = 0.001 thấp (biến yếu).
+
