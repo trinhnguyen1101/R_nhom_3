@@ -30,9 +30,13 @@ all$page <- NULL
 all$money <- as.numeric(all$money) # Chuyển đổi giá trị money thành dạng số thực
 all <- subset(all, !is.na(desc) & desc != "" & !is.na(money) & money > 0)
 print(all)
+
+# Chuẩn hóa cột date
+all$date <- sub(" .*", "", all$date)  # Bỏ phần giờ 
+all$date <- as.Date(paste0(all$date, "/2024"), format = "%d/%m/%Y")
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
 
 ```{r}
 ## Thống kê mô tả
