@@ -479,8 +479,11 @@ Vai trò: Đánh giá hiệu suất dự đoán của Random Forest, thể hiệ
 
 3. Biểu đồ đường: Xu hướng số tiền dự đoán
 ```{r}
-new_data_banks$bank <- factor(new_data_banks$bank, levels = c("Vietcombank", "BIDV", "Techcombank"))
-new_data_banks$predicted_money <- round(new_predictions_banks, 2)
+new_data_banks <- test_data %>%
+  mutate(predicted_money = predictions_tuned) %>%
+  filter(bank %in% c("VCB", "BIDV")) %>%
+  group_by(bank, days_since_start) %>%
+  summarise(predicted_money = round(mean(predicted_money, na.rm = TRUE), 2), .groups = "drop")
 ggplot(new_data_banks, aes(x = days_since_start, y = predicted_money, color = bank)) +
   geom_line() +
   geom_point(size = 2) +
