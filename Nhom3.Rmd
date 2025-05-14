@@ -36,7 +36,15 @@ Note that the `echo = FALSE` parameter was added to the code chunk to prevent pr
 
 ```{r}
 ## Thống kê mô tả
-# Thống kê cho cột money 
+# 1. Tổng quan về số lượng và quy mô giao dịch
+cat("Tổng số giao dịch:", nrow(all), "\n")
+cat("Tổng số tiền ủng hộ:", format(sum(all$money, na.rm = TRUE), big.mark = ","), "VND\n")
+
+# 2. Thống kê trung tâm và phân tán của biến định lượng 'money'
+money_summary <- summary(all$money)
+sd_money <- sd(all$money, na.rm = TRUE)
+
+# Thống kê cho cột money với số nguyên
 money_summary <- c(
   Min = format(min(all$money, na.rm = TRUE), scientific = FALSE, trim = TRUE),
   Q1 = format(quantile(all$money, 0.25, na.rm = TRUE), scientific = FALSE, trim = TRUE),
@@ -48,10 +56,30 @@ money_summary <- c(
 print("Thống kê cột money:")
 print(money_summary)
 
-# Thống kê mô tả cho các cột còn lại (date, bank, id, desc)
-all$id <- as.character(all$id)  # Chuyển id thành character để định dạng giống date, bank, desc
-stat_desc <- summary(all[, c("date", "bank", "id", "desc")])
-print(stat_desc)
+# 3. Thống kê mô tả các biến định tính
+cat("\nThống kê mô tả cho các biến định tính:\n")
+
+# a. Ngân hàng (bank)
+cat("\nTần suất sử dụng các ngân hàng:\n")
+print(sort(table(all$bank), decreasing = TRUE))
+
+# b. Ngày giao dịch (date) – số giao dịch theo ngày
+cat("\nSố giao dịch theo từng ngày:\n")
+print(sort(table(all$date), decreasing = TRUE))
+
+# c. Số lượng ID khác nhau (người gửi)
+cat("\nTổng số người gửi khác nhau (id):", length(unique(all$id)), "\n")
+
+# 4. Phân tích sơ bộ nội dung chuyển khoản (desc)
+cat("\nPhân tích nội dung chuyển khoản:\n")
+all$desc_clean <- tolower(all$desc)
+
+# Đếm từ khóa thường gặp
+keywords <- c("ung ho", "ủng hộ", "bao", "bão", "yagi", "dong bao", "đồng bào", "mien trung", "góp", "gop")
+keyword_freq <- sapply(keywords, function(k) sum(grepl(k, all$desc_clean, fixed = TRUE)))
+cat("Tần suất xuất hiện các từ khóa phổ biến trong nội dung chuyển khoản:\n")
+print(keyword_freq)
+all$desc_clean <- NULL
 ```
 
 Thống kê 6 giá trị mô tả trung tâm và phân bố của biến money:
