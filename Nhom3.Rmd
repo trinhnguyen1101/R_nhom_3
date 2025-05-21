@@ -79,7 +79,7 @@ cat("\nPhân tích nội dung chuyển khoản:\n")
 all$desc_clean <- tolower(all$desc)
 
 # Đếm từ khóa thường gặp
-keywords <- c("ung ho", "ủng hộ", "bao", "bão", "yagi", "dong bao", "đồng bào", "mien trung", "góp", "gop")
+keywords <- c("ung ho", "ủng hộ", "bao", "bão", "yagi", "dong bao", "đồng bào", "mien trung", "góp", "gop","tap the", "tập thể","cong ty","nhom","to chuc")
 keyword_freq <- sapply(keywords, function(k) sum(grepl(k, all$desc_clean, fixed = TRUE)))
 cat("Tần suất xuất hiện các từ khóa phổ biến trong nội dung chuyển khoản:\n")
 print(keyword_freq)
@@ -172,7 +172,7 @@ all$is_outlier <- abs(all$z_score) > 3
 cat("Số lượng giao dịch ngoại lệ (Z-score):", sum(all$is_outlier, na.rm = TRUE), "\n")
 
 ```
-Lọc ra được 1000 ngoại lệ
+
 ```{r}
 # Lọc các giao dịch ngoại lệ để kiểm tra
 outliers <- all[all$is_outlier, c("date", "bank", "id", "money", "desc", "z_score")]
@@ -204,7 +204,7 @@ print("Thống kê cột money (dữ liệu đã làm sạch):")
 print(money_summary_clean)
 
 ```
-Sau khi bỏ ngoại lệ, Mean đã giảm chỉ còn 536914, còn Max thì từ 10 tỷ giảm xuống chỉ còn khoảng 42 triệu.
+
 ```{r}
 # Thống kê mô tả cho các cột còn lại (date, bank, id, desc) của dữ liệu mới
 all_clean$id <- as.character(all_clean$id)  # Chuyển id thành character để đồng bộ định dạng
@@ -222,10 +222,9 @@ cat("Kết quả hồi quy trên dữ liệu gốc (Hồi quy tuyến tính):\n"
 summary(model_original)
 
 ```
-R-squared chỉ đạt 0.001194%, nghĩa là mô hình chỉ giải thích được 0.001194% biến thiên của số tiền giao dịch, một con số cực kỳ nhỏ.
-Sai số chuẩn của residuals là 14.04 triệu VND, một giá trị rất lớn, phản ánh rằng các giá trị dự đoán của mô hình có độ lệch lớn so với thực tế.
-Cụ thể, các hệ số trong model_original không ý nghĩa thống kê, với bankBIDV (275,380 VND, p = 0.0948), cho thấy giao dịch từ BIDV có vẻ cao hơn Agri 275,380 VND nhưng không đủ ý nghĩa (p > 0.05), bankVCB (-66,382 VND, p = 0.3907) và bankVietin (-192,187 VND, p = 0.0962).
-Số tiền có xu hướng giảm 12,852 VND mỗi ngày.
+Mô hình hồi quy tuyến tính trên dữ liệu gốc (money ~ bank + days_since_start, Agri là tham chiếu) có hệ số chặn 927,815 VND (p < 2e-16), nhưng các hệ số BIDV (-52,321 VND, p = 0.700), VCB (-356,711 VND, p = 1.36e-06), Vietin (-376,514 VND, p = 5.85e-06), và days_since_start (9,936 VND, p = 0.242) cho thấy hạn chế. Hệ số âm của VCB và Vietin mâu thuẫn với thực tế (VCB có 1,379,117 giao dịch). R-squared chỉ 0.00001854, sai số chuẩn lớn (14,770,000 VND), residuals lệch mạnh (Min: -1,052,000 VND, Max: 10,460,000,000 VND) do ngoại lệ. Mô hình có ý nghĩa tổng thể (F = 7.557, p = 4.402e-06) nhưng kém hiệu quả, bị ảnh hưởng bởi ngoại lệ.
+
+
 
 ```{r}
 # Hồi quy trên dữ liệu đã làm sạch (sau khi loại bỏ ngoại lệ bằng z-score)
@@ -234,9 +233,9 @@ cat("Kết quả hồi quy trên dữ liệu đã làm sạch (Hồi quy tuyến
 summary(model_clean)
 
 ```
-Cải thiện đáng kể. R-squared tăng lên 0.05783%, tuy vẫn thấp nhưng đã tăng gấp nhiều lần so với dữ liệu gốc, cho thấy mô hình giải thích tốt hơn sự biến thiên của money.
-Sai số chuẩn của residuals giảm mạnh xuống 1.498 triệu VND, phản ánh rằng các giá trị dự đoán của mô hình sát với thực tế hơn.
-Số tiền giao dịch giảm trung bình 20,043 VND mỗi ngày.
+Sau khi loại 1,825 giao dịch ngoại lệ bằng Z-score, mô hình trên dữ liệu làm sạch có hệ số chặn 710,372.7 VND (p < 2e-16). Hệ số BIDV (155,239.6 VND, p < 2e-16), VCB (54,414.2 VND, p = 3.52e-13), và days_since_start (-20,474 VND, p < 2e-16) ý nghĩa thống kê, nhưng Vietin (-2,913.9 VND, p = 0.729) không. R-squared tăng lên 0.0007588, sai số chuẩn giảm còn 1,495,000 VND, nhưng residuals vẫn lệch (Min: -843,638 VND, Max: 44,599,652 VND). Mô hình (F = 309.1, p < 2.2e-16) phản ánh đúng xu hướng: BIDV, VCB có số tiền trung bình cao hơn Agri, tiền giảm theo thời gian.
+
+
 ```{r}
 # 1. Histogram của money
 ggplot() +
@@ -249,29 +248,23 @@ ggplot() +
   theme_minimal()
 
 ```
-Biểu đồ histogram minh họa sự thay đổi phân phối của biến money (VND, thang log) trước và sau khi làm sạch bằng Z-score, với dữ liệu gốc (màu xanh nhạt) và dữ liệu đã xử lý (màu hồng). Trục X là giá trị money từ 100 đến 100,000,000 VND, trục Y là số lượng giao dịch.
-Trong dữ liệu gốc, phân phối lệch phải mạnh, tập trung nhiều giao dịch ở mức 1,000 đến 10,000,000 VND, đỉnh tại 1,000,000 VND (~1.5 triệu giao dịch), nhưng tồn tại ngoại lệ ở cả hai đầu (từ 100 đến hơn 100 triệu VND), gây nhiễu cho mô hình hồi quy.
+Dữ liệu gốc lệch phải mạnh (max: 10,473,626,000 VND), tập trung dưới 1,000,000 VND. Sau làm sạch, phân phối tập trung quanh 200,000 VND (max: 45,000,000 VND), vẫn lệch phải nhưng rõ xu hướng hơn
 
-Sau khi loại bỏ ngoại lệ bằng Z-score, phân phối thu hẹp, đuôi dài biến mất, đỉnh tần số giảm nhẹ (~1.2 triệu), và phân phối trở nên gần chuẩn hơn. Điều này giúp mô hình hồi quy hoạt động hiệu quả hơn, thể hiện qua việc sai số chuẩn giảm từ 14.04 triệu xuống 1.498 triệu VND.
 
-Histogram được chọn vì thể hiện rõ tác động tích cực của việc làm sạch dữ liệu đối với phân phối và mô hình hóa.
 ```{r}
 # 2. Boxplot của money theo ngân hàng
 ggplot() +
-  geom_boxplot(data = all, aes(x = bank, y = money, fill = "Dữ liệu gốc"), alpha = 1) +
-  geom_boxplot(data = all_clean, aes(x = bank, y = money, fill = "Dữ liệu đã làm sạch"), alpha = 1) +
+  geom_boxplot(data = all_clean, aes(x = bank, y = money, fill = "Dữ liệu đã làm sạch"), alpha = 0.5) +
   scale_y_log10(labels = scales::comma) +
-  labs(title = "Boxplot của Money theo Ngân hàng trước và sau khi loại bỏ ngoại lệ (Z-score)",
+  labs(title = "Boxplot của Money theo Ngân hàng sau khi loại bỏ ngoại lệ (Z-score)",
        x = "Ngân hàng", y = "Money (VND, log scale)",
        fill = "Loại dữ liệu") +
   theme_minimal()
 
 ```
-Boxplot thể hiện sự so sánh money (thang log) giữa các ngân hàng Agri, BIDV, VCB và Vietin, trước (xanh nhạt) và sau (hồng) khi loại bỏ ngoại lệ bằng Z-score. Trục X là tên ngân hàng, trục Y là giá trị money từ 100 đến 100,000,000 VND.
+Dữ liệu gốc có phân tán lớn, ngoại lệ lên đến hàng tỷ VND. Sau làm sạch, trung vị BIDV, VCB (250,000–300,000 VND) cao hơn Agri, Vietin (200,000 VND). IQR hẹp hơn, ngoại lệ giảm, xác nhận BIDV, VCB hiệu quả hơn Agri.
 
-Ở dữ liệu gốc, cả 4 ngân hàng có phạm vi rất rộng, nhiều ngoại lệ đặc biệt ở mức cao, khiến hộp (IQR) méo mó và khó so sánh. Sau khi làm sạch, phạm vi thu hẹp còn 10,000 đến 10,000,000 VND, ngoại lệ bị loại bỏ, trung vị và IQR giữ nguyên, giúp nhận diện rõ hơn sự khác biệt: Vietin cao nhất (~2 triệu VND), Agri thấp nhất (~1 triệu VND), BIDV và VCB ở giữa.
 
-Boxplot minh họa trực quan sự khác biệt giữa các ngân hàng, phù hợp với kết quả hồi quy sau làm sạch, nơi BIDV (+235,710 VND) và VCB (+78,185 VND) cao hơn Agri, còn Vietin không khác biệt đáng kể. Việc làm sạch giúp giảm nhiễu, làm rõ hơn sự khác biệt thực.
 ```{r}
 # 3. Biểu đồ phân tán của money theo days_since_start
 ggplot() +
@@ -284,11 +277,9 @@ ggplot() +
   theme_minimal()
 
 ```
-Stripplot minh họa mối quan hệ giữa money (thang log) và days_since_start (0–15 ngày), trước (xanh nhạt) và sau (hồng) khi làm sạch. Trục X là số ngày từ 01/09/2024, trục Y là money từ 100 đến 100 triệu VND.
+Dữ liệu gốc rải rác, ngoại lệ lớn che khuất xu hướng. Sau làm sạch, money giảm từ 200,000–500,000 VND (ngày 0–3) xuống 100,000–300,000 VND (ngày 16–18), cao điểm 10/09–14/09 (đỉnh 13/09: 421,669 giao dịch), phù hợp hệ số -20,474 VND.
 
-Trước làm sạch, money phân tán rộng, nhiều ngoại lệ, không có xu hướng rõ ràng theo ngày – phù hợp với hệ số hồi quy không ý nghĩa (-12,852 VND, p = 0.2501). Sau làm sạch, dữ liệu tập trung hơn (1,000–10 triệu VND), và xu hướng giảm nhẹ trở nên rõ ràng: money giảm trung bình ~20,043 VND mỗi ngày (p < 0.001).
-
-Stripplot làm nổi bật xu hướng này, xác nhận kết quả hồi quy sau làm sạch, hỗ trợ khuyến nghị tập trung vào các ngày đầu (01–03/09/2024) để tối ưu số tiền ủng hộ.
+.
 ```{r}
 # Trích xuất hệ số và khoảng tin cậy từ model_original và model_clean
 # Sử dụng tidy() để lấy hệ số, sai số chuẩn, và tính khoảng tin cậy 95%
@@ -323,11 +314,9 @@ ggplot(coef_data, aes(x = estimate, y = term, color = model)) +
   theme(legend.position = "bottom")
 
 ```
-Biểu đồ hệ số hồi quy so sánh dữ liệu gốc và dữ liệu làm sạch cho ba ngân hàng cho thấy ảnh hưởng rõ rệt của việc làm sạch.
+Model_original có hệ số âm (VCB, Vietin), không phản ánh thực tế. Model_clean đảo ngược dấu (BIDV: 155,239.6 VND, VCB: 54,414.2 VND), xác nhận xu hướng giảm (-20,474 VND), nhấn mạnh tầm quan trọng của làm sạch dữ liệu.
 
-Với Ngân hàng Vietin, hệ số hồi quy đều dương, nhưng giảm từ ~4e-05 xuống ~2e-05 sau khi làm sạch, với khoảng tin cậy hẹp và ổn định. VCB có hệ số âm ở cả hai bộ dữ liệu, nhưng sau làm sạch gần bằng 0 và kém ổn định hơn do khoảng tin cậy rộng. BIDV có hệ số gần 0 trong cả hai, từ -1e-05 (gốc) lên 1e-05 (làm sạch), với khoảng tin cậy tương đối ổn.
 
-Tổng thể, làm sạch dữ liệu giúp giảm biên độ hệ số, làm kết quả giữa các ngân hàng đồng nhất hơn và tăng độ tin cậy phân tích bằng cách giảm nhiễu.
 ```{r}
 
 
