@@ -74,9 +74,6 @@ print(sort(table(all$date), decreasing = TRUE))
 # c. Số lượng ID khác nhau (người gửi)
 cat("\nTổng số người gửi khác nhau (id):", length(unique(all$id)), "\n")
 
-# 4. Phân tích sơ bộ nội dung chuyển khoản (desc)
-cat("\nPhân tích nội dung chuyển khoản:\n")
-all$desc_clean <- tolower(all$desc)
 
 ```
 
