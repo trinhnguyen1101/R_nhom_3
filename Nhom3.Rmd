@@ -71,13 +71,14 @@ print(sort(table(all$bank), decreasing = TRUE))
 cat("\nSố giao dịch theo từng ngày:\n")
 print(sort(table(all$date), decreasing = TRUE))
 
-# Tạo dữ liệu cho biểu đồ: tần suất giao dịch theo ngày
+# Tạo dữ liệu
 transaction_counts <- as.data.frame(table(all$date))
 colnames(transaction_counts) <- c("Date", "Count")
 
-# Vẽ biểu đồ cột
-ggplot(transaction_counts, aes(x = Date, y = Count)) +
-  geom_bar(stat = "identity", fill = "#4CAF50") +
+# Vẽ biểu đồ đường
+ggplot(transaction_counts, aes(x = Date, y = Count, group = 1)) +
+  geom_line(color = "#4CAF50", size = 1) +
+  geom_point(color = "#4CAF50", size = 2) +  # Thêm điểm để dễ nhìn
   labs(title = "Số giao dịch theo ngày",
        x = "Ngày giao dịch",
        y = "Số lượng giao dịch") +
