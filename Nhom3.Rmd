@@ -78,12 +78,6 @@ cat("\nTổng số người gửi khác nhau (id):", length(unique(all$id)), "\n
 cat("\nPhân tích nội dung chuyển khoản:\n")
 all$desc_clean <- tolower(all$desc)
 
-# Đếm từ khóa thường gặp
-keywords <- c("ung ho", "ủng hộ", "bao", "bão", "yagi", "dong bao", "đồng bào", "mien trung", "góp", "gop","tap the", "tập thể","cong ty","nhom","to chuc")
-keyword_freq <- sapply(keywords, function(k) sum(grepl(k, all$desc_clean, fixed = TRUE)))
-cat("Tần suất xuất hiện các từ khóa phổ biến trong nội dung chuyển khoản:\n")
-print(keyword_freq)
-all$desc_clean <- NULL
 ```
 
 Cung cấp thông tin cơ bản về quy mô dữ liệu: số giao dịch lớn (860,847) và tổng tiền ủng hộ: 590,533,771,556 VND
