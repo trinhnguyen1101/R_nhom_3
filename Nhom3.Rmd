@@ -18,6 +18,8 @@ library(broom)
 ## Đọc dữ liệu từ file CSV
 all <- read.csv(file.choose())
 ```
+Dữ liệu nhận vào bao gồm 6 cột: date, bank, id, money, desc, page
+Biểu diễn các thông tin chuyển khoản ủng hộ đồng bào chống bão Yagi
 
 ```{r}
 ## Làm sạch dữ liệu
