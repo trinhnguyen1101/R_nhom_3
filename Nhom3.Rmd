@@ -19,7 +19,10 @@ library(broom)
 all <- read.csv(file.choose())
 ```
 Dữ liệu nhận vào bao gồm 6 cột: date, bank, id, money, desc, page
+
 Biểu diễn các thông tin chuyển khoản ủng hộ đồng bào chống bão Yagi
+
+Tuy nhiên, dữ liệu ban đầu không ở trạng thái sẵn sàng để phân tích ngay. Để đảm bảo chất lượng phân tích, bước làm sạch dữ liệu là cần thiết để làm nền tảng cho các phân tích sau này
 
 ```{r}
 ## Làm sạch dữ liệu
@@ -38,7 +41,14 @@ all$date <- sub(" .*", "", all$date)  # Bỏ phần giờ
 all$date <- as.Date(paste0(all$date, "/2024"), format = "%d/%m/%Y")
 ```
 
+Quy trình làm sạch được thực hiện theo ba bước chính.
 
+  Bước 1: loại bỏ cột page vì cột này không mang quá nhiều thông tin và giá trị để phân tích, só lượng dòng trống nhiều, không có giá trị thống kê
+
+  Bước 2: xử lí biến money. Đàu tiên là tiến hành chuẩn hóa dữ liệu để đồng nhất giá trị của cột thành kiểu dữ liệu số thực. Tiếp theo loại bỏ các dòng 
+trống. Bởi vì dữ liệu chuyển khoản nếu bị trống só tiền thì không thể thực hiện được.
+
+  Bước 3: làm nhất quán dữ liệu của cột date. Do dữ liệu được thu thập từ nhiều ngân hàng khác nhau, nên cách ghi nhận thời gian có sự không đồng nhất: một số ngân hàng chỉ lưu ngày, trong khi các ngân hàng khác lại kèm theo cả thông tin về giờ và phút. Nên việc đồng nhất định dạng là cần thiết cho những so sánh và phân tích sau này
 
 ```{r}
 ## Thống kê mô tả
@@ -93,7 +103,7 @@ cat("\nTổng số người gửi khác nhau (id):", length(unique(all$id)), "\n
 
 ```
 
-Cung cấp thông tin cơ bản về quy mô dữ liệu: số giao dịch lớn (860,847) và tổng tiền ủng hộ: 590,533,771,556 VND
+Cung cấp thông tin cơ bản về quy mô dữ liệu: tổng cộng có 1.630.141 giao dịch  với tổng số tiền ủng hộ lên đến 1.128.824.915.635 đồng 
 
 Thống kê 6 giá trị mô tả trung tâm và phân bố của biến money:
 
@@ -109,14 +119,13 @@ Thống kê 6 giá trị mô tả trung tâm và phân bố của biến money:
 
   Max: Giá trị lớn nhất
 
+Kết quả cho thấy số tiền ủng hộ có mức độ dao động rất lớn, với giá trị nhỏ nhất chỉ 1 đồng và giá trị lớn nhất vượt hơn 10 tỷ đồng. Trung bình mỗi giao dịch đạt khoảng 692.471 đồng, trong khi trung vị chỉ là 200.000 đồng
+
 Ngân hàng: Cho biết ngân hàng nào được sử dụng nhiều nhất (như Vietcombank), phản ánh thói quen giao dịch.
 
-Ngày: Xác định thời điểm ủng hộ cao điểm (ví dụ: ngay sau bão Yagi), giúp phân tích xu hướng thời gian.
+Ngày: Xác định thời điểm ủng hộ cao điểm (ví dụ: ngay sau bão Yagi), giúp phân tích xu hướng thời gian. Trong đó, biến date được biểu diễn trực quan bằng biểu đồ cột, thể hiện số lượng giao dịch theo từng ngày. Biểu đồ cho thấy các giao dịch được phân bố không đồng đều theo thời gian, với một số ngày ghi nhận đột biến về số lượng giao dịch. Xu hướng tăng vọt vào khoảng giữa tháng 9 cho thấy hiệu ứng truyền thông hoặc hoạt động kêu gọi quyên góp đã phát huy hiệu quả mạnh mẽ trong một khoảng thời gian ngắn, sau đó giảm dần.
 
 ID: Số ID lớn (~860,847) cho thấy nhiều người tham gia, ít giao dịch lặp lại từ cùng một người.
-
-Phân tích nội dung desc xác định các từ khóa phổ biến, phản ánh ý định ủng hộ (“ủng hộ”, “yagi”, “bão”). Việc này giúp xác định động cơ ủng hộ của mọi người như: hỗ trợ đồng bào gặp nạn. Hỗ trợ phân tích cảm xúc hoặc mục đích giao dịch, có thể dùng để cải thiện thông điệp gây quỹ.
-
 ```{r}
 ## Thống Kê Suy Diễn
 # 1. Khoảng tin cậy 95% cho trung bình money
@@ -134,7 +143,7 @@ cat("Lower:", round(ci_95["Lower"]), "Upper:", round(ci_95["Upper"]), "\n\n")
 
 Mục đích: Ước lượng phạm vi mà trung bình số tiền ủng hộ của tổng thể (tất cả giao dịch ủng hộ bão Yagi) với độ tin cậy 95%.
 
-Kết quả: Khoảng tin cậy 95% cho trung bình money: Lower: 681765 Upper: 690217
+Kết quả: Khoảng tin cậy 95% cho trung bình money: Lower: 669797 Upper: 715145 
 
 Điều này cho thấy ràng quy mô ủng hộ bão Yagi dao động quanh 681,765 - 690,217 (VNĐ) với độ tin cậy cao.
 
@@ -154,10 +163,10 @@ Giả thuyết:
   H₀: Trung bình tổng thể = 500,000.
   H₁: Trung bình tổng thể ≠ 500,000.
 
-Kết quả: t-value: 2.45 p-value: 0.016 
-Vì p-value < 0.05 ==> Kết luận: Bác bỏ H0
+Kết quả: t-value: 16.64 
+p-value: 0.00000000000000000000000000000000000000000000000000000000000003783194 
 
-Có thể thấy: Kiểm định t một mẫu giúp xác nhận trung bình ủng hộ (~685,991) cao hơn mục tiêu 500,000, cho thấy chiến dịch gây quỹ thành công về tổng thể.
+Do giá trị p nhỏ hơn mức ý nghĩa 0.05, nhóm kết luận bác bỏ giả thuyết H₀ rằng trung bình số tiền là 500,000 đồng. Nói cách khác, có bằng chứng thống kê mạnh mẽ cho thấy trung bình thực tế khác biệt có ý nghĩa thống kê so với mức giả định, và cụ thể là cao hơn đáng kể.
 
 ```{r}
 # Chuẩn bị dữ liệu (liên quan đến cả z-score và hồi quy tuyến tính)
